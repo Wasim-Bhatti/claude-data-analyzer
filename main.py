@@ -9,16 +9,18 @@ from claude_api import ClaudeAPI
 from csv_handler import CSVHandler
 
 def preprocess_data(df):
-    # Remove commas from numeric columns and convert to float
-    numeric_cols = ['Spotify Streams', 'Spotify Playlist Count', 'Spotify Playlist Reach', 'Spotify Popularity',
-                    'YouTube Views', 'YouTube Likes', 'TikTok Posts', 'TikTok Likes', 'TikTok Views',
-                    'YouTube Playlist Reach', 'Apple Music Playlist Count', 'AirPlay Spins', 'SiriusXM Spins',
-                    'Deezer Playlist Count', 'Deezer Playlist Reach', 'Amazon Playlist Count', 'Pandora Streams',
-                    'Pandora Track Stations', 'Soundcloud Streams', 'Shazam Counts']
+    # Identify columns that contain numeric data
+    numeric_cols = df.select_dtypes(include=['int64', 'float64']).columns.tolist()
     
+    # Add columns that are stored as strings but represent numbers
+    for col in df.select_dtypes(include=['object']):
+        # Check if the column contains numeric strings (allowing for commas)
+        if df[col].str.replace(',', '').str.isnumeric().all():
+            numeric_cols.append(col)
+    
+    # Remove commas from numeric columns and convert to float
     for col in numeric_cols:
-        if col in df.columns:
-            df[col] = df[col].replace({',': ''}, regex=True).astype(float)
+        df[col] = df[col].replace({',': ''}, regex=True).astype(float)
     
     return df
 
@@ -55,57 +57,56 @@ def main():
     # Preprocess the data
     df = preprocess_data(df)
     
-    # Prepare prompt for Claude's analysis and visualization suggestions
+    # Prepare prompt for Claude's visualization suggestions
     prompt = f"""
-    Analyze the following data:
+    Analyze the following dataset and create three visualizations:
 
     {df.head(10).to_string()}
 
     Columns: {', '.join(df.columns)}
 
-    Please provide:
-    1. A summary of the data, including any interesting patterns or insights you can find.
-    2. Three different types of visualizations that would be appropriate for this specific dataset, explaining why each would be useful.
-    3. Python code using matplotlib to create these three visualizations. Use only the columns that are available in the dataset.
+    Please provide Python code using matplotlib or seaborn to create three different visualizations that best represent the data and highlight key insights. Use only the columns that are available in the dataset.
 
-    For the visualization code:
+    For each visualization:
+    1. Briefly explain why you chose this visualization and what insight it provides.
+    2. Provide the Python code to create the visualization.
+
+    Guidelines for the visualization code:
     - Use the variable 'df' to refer to the DataFrame containing the data.
     - Include any necessary imports at the beginning of each code block.
     - If working with dates, ensure proper date parsing.
     - You can use aggregations (sum, mean, etc.) on numerical columns if needed.
-    - Provide each visualization as a separate code block.
-    - Limit the number of items displayed in visualizations to improve readability (e.g., top 10 songs).
+    - Limit the number of items displayed in visualizations to improve readability (e.g., top 10 items).
+    - Make sure to include proper labels, titles, and legends where appropriate.
 
     Available columns: {', '.join(df.columns)}
+    Column types: 
+    {df.dtypes.to_string()}
     """
     
-    print("Sending data to Claude for analysis and visualization suggestions...")
+    print("Sending data to Claude for visualization suggestions...")
     
     # Send request to Claude
     response = claude.send_message(prompt)
     
-    # Print Claude's analysis and suggestions
+    # Print Claude's suggestions
     if response:
-        print("\nClaude's Analysis and Visualization Suggestions:")
+        print("\nClaude's Visualization Suggestions:")
         print(response)
         
-        # Ask user if they want to create visualizations
-        create_viz = input("\nWould you like to create the suggested visualizations? (yes/no): ").lower()
-        
-        if create_viz == 'yes':
-            # Extract and execute the code blocks
-            code_blocks = response.split('```python')[1:]
-            for i, code_block in enumerate(code_blocks):
-                code = code_block.split('```')[0].strip()
-                try:
-                    print(f"\nCreating visualization {i+1}...")
-                    exec(code, {'df': df, 'plt': plt, 'sns': sns, 'pd': pd})
-                    plt.tight_layout()
-                    plt.show()
-                except Exception as e:
-                    print(f"Error creating visualization {i+1}: {str(e)}")
-                    print("Error details:")
-                    print(code)
+        # Extract and execute the code blocks
+        code_blocks = response.split('```python')[1:]
+        for i, code_block in enumerate(code_blocks):
+            code = code_block.split('```')[0].strip()
+            try:
+                print(f"\nCreating visualization {i+1}...")
+                exec(code, {'df': df, 'plt': plt, 'sns': sns, 'pd': pd})
+                plt.tight_layout()
+                plt.show()
+            except Exception as e:
+                print(f"Error creating visualization {i+1}: {str(e)}")
+                print("Error details:")
+                print(code)
     else:
         print("\nFailed to get a response from Claude. Please check your API key and try again.")
 
