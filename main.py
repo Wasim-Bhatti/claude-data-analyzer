@@ -65,19 +65,21 @@ def main():
 
     Columns: {', '.join(df.columns)}
 
-    Please provide Python code using matplotlib or seaborn to create three different visualizations that best represent the data and highlight key insights. Use only the columns that are available in the dataset.
+    Please provide Python code using matplotlib or seaborn (and no other visualization libraries) to create three different visualizations that best represent the data and highlight key insights. Use only the columns that are available in the dataset.
 
     For each visualization:
     1. Briefly explain why you chose this visualization and what insight it provides.
     2. Provide the Python code to create the visualization.
 
     Guidelines for the visualization code:
-    - Use the variable 'df' to refer to the DataFrame containing the data.
-    - Include any necessary imports at the beginning of each code block.
+    - Make sure to import and install all libraries as an initial step for all three visualizations, so that we can ensure all three work.
+    - The DataFrame is already loaded and named 'df'. Do not include any code to read a CSV file.
+    - Include any necessary imports at the beginning of each code block. (Only Matplotlib or seaborn for visualization purposes)
     - If working with dates, ensure proper date parsing.
     - You can use aggregations (sum, mean, etc.) on numerical columns if needed.
     - Limit the number of items displayed in visualizations to improve readability (e.g., top 10 items).
     - Make sure to include proper labels, titles, and legends where appropriate.
+    - Make sure the visualizations are readable, engaging, interesting, and insightful.
 
     Available columns: {', '.join(df.columns)}
     Column types: 
